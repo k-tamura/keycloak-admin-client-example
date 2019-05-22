@@ -12,7 +12,7 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>1.8</java.version>
         <maven-failsafe-plugin.version>2.19.1</maven-failsafe-plugin.version>
-        <keycloak.admin.version>4.8.3.Final</keycloak.admin.version>
+        <keycloak.admin.version>6.0.0</keycloak.admin.version>
         <resteasy.version>3.1.4.Final</resteasy.version>
     </properties>
     <dependencies>
