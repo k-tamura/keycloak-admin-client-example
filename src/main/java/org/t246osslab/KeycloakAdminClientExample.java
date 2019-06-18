@@ -4,6 +4,7 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.keycloak.representations.idm.CredentialRepresentation;
+import org.keycloak.representations.idm.ClientRepresentation;
 import org.keycloak.representations.idm.RealmRepresentation;
 import org.keycloak.representations.idm.RoleRepresentation;
 import org.keycloak.representations.idm.UserRepresentation;
@@ -37,7 +38,7 @@ public class KeycloakAdminClientExample {
         */
 
         // Create a realm
-        String realmName = "realm1";
+        String realmName = "realmXX1";
         createRealm(kc, realmName);
 
         // Create a user
@@ -47,6 +48,10 @@ public class KeycloakAdminClientExample {
         // Create a role
         String roleName = "role1";
         createRole(kc, realmName, roleName);
+
+        // Create a client
+        String clientName = "client1";
+        createClient(kc, realmName, clientName);
     }
 
     private static void createRealm(Keycloak kc, String realmName) {
@@ -109,4 +114,23 @@ public class KeycloakAdminClientExample {
             e.printStackTrace();
         }
     }
+
+    private static void createClient(Keycloak kc, String realmName, String clientName) {
+        try {
+            ClientRepresentation clientRepresentation = new ClientRepresentation();
+            clientRepresentation.setName(clientName);
+            clientRepresentation.setEnabled(Boolean.TRUE);
+            kc.realm(realmName).clients().create(clientRepresentation);
+            System.out.println(clientName + " was created.");
+        } catch (ClientErrorException e) {
+            if (e.getResponse().getStatus() == Response.Status.CONFLICT.getStatusCode()) {
+                System.out.println(clientName + " has already been created.");
+            } else {
+                e.printStackTrace();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }
