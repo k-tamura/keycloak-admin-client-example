@@ -3,11 +3,10 @@ package org.t246osslab;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
-import org.keycloak.representations.idm.CredentialRepresentation;
-import org.keycloak.representations.idm.ClientRepresentation;
-import org.keycloak.representations.idm.RealmRepresentation;
-import org.keycloak.representations.idm.RoleRepresentation;
-import org.keycloak.representations.idm.UserRepresentation;
+import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
+import org.keycloak.representations.AccessToken;
+import org.keycloak.representations.idm.*;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
@@ -37,8 +36,11 @@ public class KeycloakAdminClientExample {
                 "admin-cli");
         */
 
+        // See the contents of the access token
+        printAccessToken(kc);
+
         // Create a realm
-        String realmName = "realmXX1";
+        String realmName = "realm1";
         createRealm(kc, realmName);
 
         // Create a user
@@ -52,6 +54,23 @@ public class KeycloakAdminClientExample {
         // Create a client
         String clientName = "client1";
         createClient(kc, realmName, clientName);
+
+        // Force logout all users in the realm
+        kc.realm(realmName).logoutAll();
+    }
+
+    private static void printAccessToken(Keycloak kc) {
+        String accessTokenString = kc.tokenManager().getAccessToken().getToken();
+        System.out.println("accessTokenString: " + accessTokenString);
+        try {
+            JWSInput input = new JWSInput(accessTokenString);
+            AccessToken accessToken = input.readJsonContent(AccessToken.class);
+            System.out.println("subject: " + accessToken.getSubject());
+            System.out.println("preferredUsername: " + accessToken.getPreferredUsername());
+            System.out.println("givenName: " + accessToken.getGivenName());
+        } catch (JWSInputException e) {
+            e.printStackTrace();
+        }
     }
 
     private static void createRealm(Keycloak kc, String realmName) {
