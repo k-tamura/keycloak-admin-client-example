@@ -7,10 +7,14 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.idm.*;
+import org.keycloak.util.JsonSerialization;
 
 import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.core.Response;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Map;
 
 public class KeycloakAdminClientExample {
 
@@ -60,14 +64,16 @@ public class KeycloakAdminClientExample {
     }
 
     private static void printAccessToken(Keycloak kc) {
-        String accessTokenString = kc.tokenManager().getAccessToken().getToken();
-        System.out.println("accessTokenString: " + accessTokenString);
         try {
+            String accessTokenString = kc.tokenManager().getAccessToken().getToken();
+            System.out.println("accessTokenString: " + accessTokenString);
             JWSInput input = new JWSInput(accessTokenString);
             AccessToken accessToken = input.readJsonContent(AccessToken.class);
             System.out.println("subject: " + accessToken.getSubject());
             System.out.println("preferredUsername: " + accessToken.getPreferredUsername());
             System.out.println("givenName: " + accessToken.getGivenName());
+        } catch (ClientErrorException e) {
+            handleClientErrorException(e);
         } catch (JWSInputException e) {
             e.printStackTrace();
         }
@@ -84,10 +90,15 @@ public class KeycloakAdminClientExample {
             if (e.getResponse().getStatus() == Response.Status.CONFLICT.getStatusCode()) {
                 System.out.println(realmName + " has already been created.");
             } else {
-                e.printStackTrace();
+                handleClientErrorException(e);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Throwable cause = e.getCause();
+            if (cause instanceof ClientErrorException) {
+                handleClientErrorException((ClientErrorException) cause);
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -103,16 +114,23 @@ public class KeycloakAdminClientExample {
             ArrayList<CredentialRepresentation> credentials = new ArrayList<>();
             credentials.add(passwordCred);
             user.setCredentials(credentials);
-            Response result = kc.realm(realmName).users().create(user);
-            if (result.getStatus() == Response.Status.CREATED.getStatusCode()) {
+            Response response = kc.realm(realmName).users().create(user);
+            if (response.getStatus() == Response.Status.CREATED.getStatusCode()) {
                 System.out.println(username + " was created.");
-            } else if (result.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
+            } else if (response.getStatus() == Response.Status.CONFLICT.getStatusCode()) {
                 System.out.println(username + " has already been created.");
             } else {
-                System.out.println("Result status: " + result.getStatus());
+                System.out.println("Result status: " + response.getStatus());
             }
+        } catch (ClientErrorException e) {
+            handleClientErrorException(e);
         } catch (Exception e) {
-            e.printStackTrace();
+            Throwable cause = e.getCause();
+            if (cause instanceof ClientErrorException) {
+                handleClientErrorException((ClientErrorException) cause);
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -127,10 +145,15 @@ public class KeycloakAdminClientExample {
             if (e.getResponse().getStatus() == Response.Status.CONFLICT.getStatusCode()) {
                 System.out.println(roleName + " has already been created.");
             } else {
-                e.printStackTrace();
+                handleClientErrorException(e);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Throwable cause = e.getCause();
+            if (cause instanceof ClientErrorException) {
+                handleClientErrorException((ClientErrorException) cause);
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -145,11 +168,29 @@ public class KeycloakAdminClientExample {
             if (e.getResponse().getStatus() == Response.Status.CONFLICT.getStatusCode()) {
                 System.out.println(clientName + " has already been created.");
             } else {
-                e.printStackTrace();
+                handleClientErrorException(e);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            Throwable cause = e.getCause();
+            if (cause instanceof ClientErrorException) {
+                handleClientErrorException((ClientErrorException) cause);
+            } else {
+                e.printStackTrace();
+            }
         }
     }
 
+    private static void handleClientErrorException(ClientErrorException e) {
+        e.printStackTrace();
+        Response response = e.getResponse();
+        try {
+            System.out.println("status: " + response.getStatus());
+            System.out.println("reason: " + response.getStatusInfo().getReasonPhrase());
+            Map error = JsonSerialization.readValue((ByteArrayInputStream) response.getEntity(), Map.class);
+            System.out.println("error: " + error.get("error"));
+            System.out.println("error_description: " + error.get("error_description"));
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+    }
 }
